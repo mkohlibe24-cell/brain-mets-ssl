@@ -1,12 +1,12 @@
 """
 Patient-level train/val/test split of the 200 BraTS-MET cases.
+Scans the Pretreat-MetsToBrain-Masks folder directly.
 """
 
-import pickle
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 
-COHORT_PKL = '/workspace/pseudolabels/cohort.pkl'
+BRATS_ROOT = Path('/workspace/PKG - Pretreat-MetsToBrain-Masks/Pretreat-MetsToBrain-Masks')
 OUT_DIR = Path('/workspace/pseudolabels/splits')
 SEED = 42
 TRAIN_FRAC = 0.70
@@ -15,9 +15,7 @@ TEST_FRAC  = 0.15
 
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-cohort = pickle.load(open(COHORT_PKL, 'rb'))
-
-brats_cases = [c['case_id'] for c in cohort if c.get('seg') is not None]
+brats_cases = sorted([p.name for p in BRATS_ROOT.iterdir() if p.is_dir() and p.name.startswith('BraTS-MET')])
 
 print(f"Total BraTS cases found: {len(brats_cases)}")
 assert len(brats_cases) == 200, f"Expected 200 BraTS cases, got {len(brats_cases)}"
