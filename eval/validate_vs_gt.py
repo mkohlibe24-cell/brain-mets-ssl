@@ -97,9 +97,9 @@ def main():
                 prob = np.asarray(out['metastasis_network_floats'])
 
                 if gt_img is None:
-                    gt_img = nib.load(gt_path).get_fdata()
-                    gt_binary_any = (gt_img > 0).astype(np.uint8)
 
+                    gt_img = nib.load(gt_path).get_fdata()
+                   gt_binary_any = (gt_img == 3).astype(np.uint8)  # ET/metastasis-core only — matches AURORA's metastasis_network_floats head
                 rows = []
                 for thr in THRESHOLDS:
                     pred_binary = (prob >= thr).astype(np.uint8)
