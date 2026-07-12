@@ -16,16 +16,26 @@ computed the EMPTY-bucket policy on the wrong threshold's cases. Fixed by
 explicitly building the column name f"bucket@{THRESHOLD}" and failing loudly
 if it isn't found instead of falling back to a guess.
 
-CALIBRATION NOTE (updated after manifest-column fix): with the CORRECT
-490-case EMPTY population at thr=0.85 (see manifest note above -- an earlier
-run had wrongly swept the 554-case thr=0.95 EMPTY population and never got
-close to the BraTS reference rate), the sweep now lands almost exactly on
-target: LOW_CONF_THRESH=0.70 -> LIKELY_MISS fraction = 10.4%, vs the
-BRATS_MISS_RATE reference of 10.5%. This is a genuine calibration match, not
-a coincidence of a miscalibrated population, so LOW_CONF_THRESH_DEFAULT is
-set to 0.70 (51 LIKELY_MISS / 439 TRUE_NEGATIVE), superseding the earlier
-conservative 0.3 default (356/198 on the wrong population) that was only
-adopted because no threshold fit the target on the wrong 554-case set.
+THRESHOLD NOTE (updated): pipeline switched from KEEP threshold 0.85 to 0.95,
+per threshold_recommendation.txt (RECOMMENDED THRESHOLD by full-input Dice:
+0.95; full-input Dice was statistically flat across 0.85/0.90/0.95 at
+~0.481/0.482/0.483, so the recommendation engine's own criterion -- best
+Dice -- was used to settle it rather than the earlier manual "flat, so take
+more data at 0.85" override). This changes the EMPTY-bucket population from
+490 cases (at thr=0.85) to 554 cases (at thr=0.95).
+
+CALIBRATION NOTE: LOW_CONF_THRESH_DEFAULT was calibrated separately for each
+KEEP threshold's EMPTY population, since the max-prob distribution differs:
+  - thr=0.85 EMPTY population (490 cases): LOW_CONF_THRESH=0.70 matched
+    almost exactly (10.4% vs 10.5% target).
+  - thr=0.95 EMPTY population (554 cases): a coarse sweep (0.3-0.7) never
+    got close (closest was 20.8% at 0.70), so the sweep was extended in
+    fine steps up to 0.95; LOW_CONF_THRESH=0.87 is the closest match
+    (10.3% vs 10.5% target) and is the value now set below.
+If THRESHOLD is changed again in the future, re-run the sweep (SWEEP_VALUES
+below) against the new EMPTY population before trusting any inherited
+LOW_CONF_THRESH_DEFAULT value -- do not assume a prior calibration carries
+over.
 """
 import sys
 import glob
@@ -37,12 +47,12 @@ import nibabel as nib
 
 BUCKET_MANIFEST = Path('/workspace/pseudolabels/buckets/bucket_manifest.csv')
 PROB_MAPS_DIR = Path('/workspace/pseudolabels/prob_maps')
-OUT_CSV = Path('/workspace/pseudolabels/buckets/empty_policy_thr0.85.csv')
+OUT_CSV = Path('/workspace/pseudolabels/buckets/empty_policy_thr0.95.csv')
 
-THRESHOLD = 0.85
+THRESHOLD = 0.95
 BRATS_MISS_RATE = 0.105
-LOW_CONF_THRESH_DEFAULT = 0.70
-SWEEP_VALUES = [0.3, 0.4, 0.5, 0.6, 0.7]
+LOW_CONF_THRESH_DEFAULT = 0.87
+SWEEP_VALUES = [0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 0.80, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.95]
 
 
 def load_manifest():
